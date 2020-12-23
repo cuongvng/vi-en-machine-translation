@@ -1,7 +1,7 @@
 import unittest
 import sys
 sys.path.append("../")
-from src.data_preprocessing import *
+from src.dataset import *
 
 en = [
     'If you &apos;re a doctor you can do some good things, but if you &apos;re a caring doctor you can do some other things.',
