@@ -5,10 +5,10 @@ from pyvi import ViTokenizer
 from torchnlp.encoders.text import StaticTokenizerEncoder, DEFAULT_PADDING_INDEX, DEFAULT_EOS_INDEX
 import sys
 sys.path.append("../")
-from CONFIG import TARGET_LEN
+from CONFIG import TARGET_VALID_LEN
 
 class EnViTrainingDataSet(Dataset):
-    def __init__(self, en_path, vi_path, target_len=TARGET_LEN):
+    def __init__(self, en_path, vi_path, target_len=TARGET_VALID_LEN+2):
         data_en = load_data(en_path)
         data_vi = load_data(vi_path)
         assert len(data_en) == len(data_vi), "Numbers of vietnamese and english sentences do not match!"
@@ -28,7 +28,7 @@ class EnViTrainingDataSet(Dataset):
         return self.token_en[index], self.token_vi[index]
 
 class EnViDevTestDataset(Dataset):
-    def __init__(self, en_path, vi_path, encoder_en, encoder_vi, target_len=TARGET_LEN):
+    def __init__(self, en_path, vi_path, encoder_en, encoder_vi, target_len=TARGET_VALID_LEN+2):
         data_en = load_data(en_path)
         data_vi = load_data(vi_path)
         assert len(data_en) == len(data_vi), "Numbers of vietnamese and english sentences do not match!"
@@ -91,4 +91,5 @@ def pad_or_truncate(tokenized_sentence, target_len):
         res = tokenized_sentence[:target_len-1]
     else: # Pad
         res = tokenized_sentence[:-1] + [DEFAULT_PADDING_INDEX] * (target_len - len(tokenized_sentence))
+
     return torch.tensor(res + [DEFAULT_EOS_INDEX], dtype=torch.int64)
