@@ -13,13 +13,13 @@ class EnViTrainingDataSet(Dataset):
         data_vi = load_data(vi_path)
         assert len(data_en) == len(data_vi), "Numbers of vietnamese and english sentences do not match!"
 
-        self.encoder_en = get_encoder(data_en)
-        self.encoder_vi = get_encoder(data_vi)
-        self.vocab_en = self.encoder_en.vocab
-        self.vocab_vi = self.encoder_vi.vocab
+        self.tokenizer_en = get_tokenizer(data_en)
+        self.tokenizer_vi = get_tokenizer(data_vi)
+        self.vocab_en = self.tokenizer_en.vocab
+        self.vocab_vi = self.tokenizer_vi.vocab
 
-        self.token_en = data_en.apply(lambda s: encode_en(s, self.encoder_en, target_len))
-        self.token_vi = data_vi.apply(lambda s: encode_vi(s, self.encoder_vi, target_len))
+        self.token_en = data_en.apply(lambda s: tokenize_en(s, self.tokenizer_en, target_len))
+        self.token_vi = data_vi.apply(lambda s: tokenize_vi(s, self.tokenizer_vi, target_len))
 
     def __len__(self):
         return len(self.token_en)
@@ -28,13 +28,13 @@ class EnViTrainingDataSet(Dataset):
         return self.token_en[index], self.token_vi[index]
 
 class EnViDevTestDataset(Dataset):
-    def __init__(self, en_path, vi_path, encoder_en, encoder_vi, target_len=TARGET_VALID_LEN+2):
+    def __init__(self, en_path, vi_path, tokenizer_en, tokenizer_vi, target_len=TARGET_VALID_LEN + 2):
         data_en = load_data(en_path)
         data_vi = load_data(vi_path)
         assert len(data_en) == len(data_vi), "Numbers of vietnamese and english sentences do not match!"
 
-        self.token_en = data_en.apply(lambda s: encode_en(s, encoder_en, target_len))
-        self.token_vi = data_vi.apply(lambda s: encode_vi(s, encoder_vi, target_len))
+        self.token_en = data_en.apply(lambda s: tokenize_en(s, tokenizer_en, target_len))
+        self.token_vi = data_vi.apply(lambda s: tokenize_vi(s, tokenizer_vi, target_len))
 
     def __len__(self):
         return len(self.token_en)
@@ -43,33 +43,33 @@ class EnViDevTestDataset(Dataset):
         return self.token_en[index], self.token_vi[index]
 
 
-def encode_en(sentence, encoder_en, target_len):
+def tokenize_en(sentence, tokenizer_en, target_len):
     """
     :input: "If you're a doctor you can do some good things"
     :return: 1D Tensor of indices in the encoder's dictionary of all tokens (words) of the sentence.
     tensor([3, 1, 57, 328, 27, 481, 57, 345, 11, 6, 189, 76, 482, 465, 2])
     """
-    encoded_sen = encoder_en.encode(sentence)
+    encoded_sen = tokenizer_en.encode(sentence)
     return pad_or_truncate(encoded_sen, target_len)
 
-def encode_vi(sentence, encoder_vi, target_len):
+def tokenize_vi(sentence, tokenizer_vi, target_len):
     """
     :input: ""Bà nói với tất cả những đứa cháu rằng chúng đặc biệt"
     :tokenized_value: "Bà nói với tất_cả những đứa cháu rằng chúng đặc_biệt"
     :return: tensor([ 3, 133, 332,  42, 600,  18,  43, 662, 106, 377, 557, 2])
     """
-    tokenized_sen = ViTokenizer.tokenize(sentence)
-    encoded_sen = encoder_vi.encode(tokenized_sen)
-    return pad_or_truncate(encoded_sen, target_len)
+    segmented_sen = ViTokenizer.tokenize(sentence)
+    tokenized_sen = tokenizer_vi.encode(segmented_sen)
+    return pad_or_truncate(tokenized_sen, target_len)
 
-def decode_en(sentence, encoder_en):
+def detokenize_en(sentence, encoder_en):
     """
     :input: tensor([3, 1, 57, 328, 27, 481, 57, 345, 11, 6, 189, 76, 482, 465, 2])
     :return: "If you're a doctor you can do some good things"
     """
     return encoder_en.decode(sentence)
 
-def decode_vi(sentence, encoder_vi):
+def detokenize_vi(sentence, encoder_vi):
     return encoder_vi.decode(sentence).replace('_', ' ')
 
 def load_data(data_path):
@@ -78,10 +78,10 @@ def load_data(data_path):
     sentence_series = pd.Series(list_sentences)
     return sentence_series
 
-def get_encoder(list_training_sentences):
-    encoder = StaticTokenizerEncoder(sample=list_training_sentences, min_occurrences=2,
+def get_tokenizer(list_training_sentences):
+    tokenizer = StaticTokenizerEncoder(sample=list_training_sentences, min_occurrences=2,
                                      append_sos=True, append_eos=True)
-    return encoder
+    return tokenizer
 
 def pad_or_truncate(tokenized_sentence, target_len):
     if isinstance(tokenized_sentence, torch.Tensor):
