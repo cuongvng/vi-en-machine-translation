@@ -23,10 +23,8 @@ class IWSLT15EnViDataSet(Dataset):
         """
         return self.data_en[index], self.data_vi[index]
 
-
 def load_data(data_path):
     with open(data_path, 'r') as fr:
         list_sentences = fr.readlines()
     sentence_series = pd.Series(list_sentences)
     return sentence_series
-
