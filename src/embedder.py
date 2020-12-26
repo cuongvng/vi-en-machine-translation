@@ -4,11 +4,11 @@ import sys
 sys.path.append("../")
 from CONFIG import MAX_LENGTH, PHOBERT_REPO, BERT_REPO
 
-class PhoBert(object):
+class PhoBERT(object):
     phobert_tokenizer = AutoTokenizer.from_pretrained(PHOBERT_REPO)
     phobert_embedder = AutoModel.from_pretrained(PHOBERT_REPO)
 
-    def embed(self, list_of_segmented_sentences):
+    def __call__(self, list_of_segmented_sentences):
         """
         :param list_of_segmented_sentences: e.g. [
             "Tôi là sinh_viên trường đại_học Công_nghệ .",
@@ -26,7 +26,7 @@ class BERT(object):
     bert_tokenizer = AutoTokenizer.from_pretrained(BERT_REPO)
     bert_embedder = AutoModel.from_pretrained(BERT_REPO)
 
-    def embed(self, list_of_sentences):
+    def __call__(self, list_of_sentences):
         """
         :param list_of_sentences: e.g. [
             "Hello world \n",
