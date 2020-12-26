@@ -3,20 +3,56 @@ import torch.nn as nn
 import math
 import sys
 sys.path.append("../")
-from CONFIG import MAX_LENGTH
+from CONFIG import MAX_LENGTH, EMBEDDING_SIZE, N_TRANSFORMER_LAYERS, N_HEADS, DIM_FEEDFORWARD, VI2EN, EN2VI
+from .embedder import PhoBERT, BERT
 
+class NMT(nn.Module):
+    def __init__(self, mode, vi_vocab_size, en_vocab_size):
+        super(NMT, self).__init__()
 
-class En2ViEncoder(nn.Module):
-    pass
+        assert mode == VI2EN or mode == EN2VI, f"`mode` must be either {VI2EN} or {EN2VI}"
+        if mode == VI2EN:
+            self.encoder = Encoder(embedder=PhoBERT())
+            self.decoder = Decoder(embedder=BERT(), vocab_size=en_vocab_size)
+        else:
+            self.encoder = Encoder(embedder=BERT())
+            self.decoder = Decoder(embedder=PhoBERT(), vocab_size=vi_vocab_size)
 
-class En2ViDecoder(nn.Module):
-    pass
+    def forward(self, src, tgt):
+        memory = self.encoder(src)
+        return self.decoder(tgt, memory)
 
-class Vi2EnEncoder(nn.Module):
-    pass
+class Encoder(nn.Module):
+    def __init__(self, embedder):
+        super(Encoder, self).__init__()
+        self.embedder = embedder
+        self.positional_encoder = PositionalEncoder(d_model=EMBEDDING_SIZE)
 
-class Vi2EnDecoder(nn.Module):
-    pass
+        encoder_layer = nn.TransformerEncoderLayer(d_model=EMBEDDING_SIZE, nhead=N_HEADS, dim_feedforward=DIM_FEEDFORWARD)
+        self.transformer_encoder = nn.TransformerEncoder(encoder_layer, N_TRANSFORMER_LAYERS)
+
+    def forward(self, src_batch):
+        X = self.embedder(src_batch) # (batch_size, max_len, embedding_size)
+        X = X + self.positional_encoder(X)
+        return self.transformer_encoder(X)
+
+class Decoder(nn.Module):
+    def __init__(self, embedder, vocab_size):
+        super(Decoder, self).__init__()
+        self.embedder = embedder
+        self.positional_encoder = PositionalEncoder(d_model=EMBEDDING_SIZE)
+
+        decoder_layer = nn.TransformerDecoderLayer(d_model=EMBEDDING_SIZE, nhead=N_HEADS, dim_feedforward=DIM_FEEDFORWARD)
+        self.transfomer_decoder = nn.TransformerDecoder(decoder_layer, N_TRANSFORMER_LAYERS)
+
+        self.fc = nn.Linear(in_features=MAX_LENGTH*EMBEDDING_SIZE, out_features=vocab_size)
+
+    def forward(self, vietnamese_batch, encoder_last_state):
+        X = self.phobert(vietnamese_batch)
+        X = X + self.positional_encoder(X)
+        X = self.transfomer_decoder(tgt=X, memory=encoder_last_state)
+        X = X.flatten(start_dim=1)
+        return self.fc(X)
 
 class PositionalEncoder(nn.Module):
     def __init__(self, d_model, dropout=0.1, max_len=MAX_LENGTH):
