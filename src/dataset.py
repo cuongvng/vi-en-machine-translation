@@ -6,10 +6,10 @@ sys.path.append("../")
 
 class IWSLT15EnViDataSet(Dataset):
     def __init__(self, en_path, vi_path):
-        self.data_en = load_data(en_path)
+        self.data_en = load_data(en_path).tolist()
         data_vi = load_data(vi_path)
         # Segment Vietnamese words
-        self.data_vi = data_vi.apply(lambda s: ViTokenizer.tokenize(s))
+        self.data_vi = data_vi.apply(lambda s: ViTokenizer.tokenize(s)).tolist()
         assert len(self.data_en) == len(self.data_vi), "Numbers of vietnamese and english sentences do not match!"
 
     def __len__(self):
