@@ -1,1 +1,4 @@
-TARGET_VALID_LEN = 10
+MAX_LENGTH = 12
+EMBEDDING_SIZE = 768
+BERT_REPO = "bert-base-uncased"
+PHOBERT_REPO = "vinai/phobert-base"
