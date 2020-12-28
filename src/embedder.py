@@ -2,11 +2,11 @@ import torch
 from transformers import AutoTokenizer, AutoModel
 import sys
 sys.path.append("../")
-from CONFIG import MAX_LENGTH, PHOBERT_REPO, BERT_REPO
+from CONFIG import MAX_LENGTH, PhoBERT_REPO, BERT_REPO, BERT_PADDING_INDEX, PhoBERT_PADDING_INDEX
 
 class PhoBERT(object):
-    phobert_tokenizer = AutoTokenizer.from_pretrained(PHOBERT_REPO)
-    phobert_embedder = AutoModel.from_pretrained(PHOBERT_REPO)
+    phobert_tokenizer = AutoTokenizer.from_pretrained(PhoBERT_REPO)
+    phobert_embedder = AutoModel.from_pretrained(PhoBERT_REPO)
 
     def __call__(self, list_of_segmented_sentences):
         """
@@ -18,9 +18,12 @@ class PhoBERT(object):
         """
         tokens = self.phobert_tokenizer(list_of_segmented_sentences, truncation=True,
                                         padding="max_length", max_length=MAX_LENGTH)
+        tokens = torch.tensor(tokens['input_ids'])
+        valid_len = torch.where(tokens != PhoBERT_PADDING_INDEX, torch.tensor(1), torch.tensor(0)).sum(dim=1)
+
         with torch.no_grad():
-            features = self.phobert_embedder(torch.tensor(tokens['input_ids']))
-        return features['last_hidden_state']
+            features = self.phobert_embedder(tokens)
+        return features['last_hidden_state'], valid_len
 
 class BERT(object):
     bert_tokenizer = AutoTokenizer.from_pretrained(BERT_REPO)
@@ -36,6 +39,9 @@ class BERT(object):
         """
         tokens = self.bert_tokenizer(list_of_sentences, truncation=True,
                                         padding="max_length", max_length=MAX_LENGTH)
+        tokens = torch.tensor(tokens['input_ids'])
+        valid_len = torch.where(tokens!=BERT_PADDING_INDEX, torch.tensor(1), torch.tensor(0)).sum(dim=1)
+
         with torch.no_grad():
-            features = self.bert_embedder(torch.tensor(tokens['input_ids']))
-        return features['last_hidden_state']
+            features = self.bert_embedder(tokens)
+        return features['last_hidden_state'], valid_len
