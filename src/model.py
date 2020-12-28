@@ -7,16 +7,16 @@ from CONFIG import MAX_LENGTH, EMBEDDING_SIZE, N_TRANSFORMER_LAYERS, N_HEADS, DI
 from .embedder import PhoBERT, BERT
 
 class NMT(nn.Module):
-    def __init__(self, mode, vi_vocab_size, en_vocab_size):
+    def __init__(self, mode, tgt_vocab_size):
         super(NMT, self).__init__()
 
         assert mode == VI2EN or mode == EN2VI, f"`mode` must be either {VI2EN} or {EN2VI}"
         if mode == VI2EN:
             self.encoder = Encoder(embedder=PhoBERT())
-            self.decoder = Decoder(embedder=BERT(), vocab_size=en_vocab_size)
+            self.decoder = Decoder(embedder=BERT(), vocab_size=tgt_vocab_size)
         else:
             self.encoder = Encoder(embedder=BERT())
-            self.decoder = Decoder(embedder=PhoBERT(), vocab_size=vi_vocab_size)
+            self.decoder = Decoder(embedder=PhoBERT(), vocab_size=tgt_vocab_size)
 
     def forward(self, src, tgt):
         memory = self.encoder(src)
@@ -69,8 +69,3 @@ class PositionalEncoder(nn.Module):
     def forward(self, x):
         x = x + self.pe
         return self.dropout(x)
-
-def xavier_init_weights(model):
-    if isinstance(model, torch.nn.Linear):
-        torch.nn.init.xavier_uniform_(model.weight)
-    return
