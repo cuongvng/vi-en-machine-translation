@@ -32,7 +32,7 @@ class Encoder(nn.Module):
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer, N_TRANSFORMER_LAYERS)
 
     def forward(self, src_batch):
-        X = self.embedder(src_batch) # (batch_size, max_len, embedding_size)
+        X, _ = self.embedder(src_batch) # (batch_size, max_len, embedding_size)
         X = X + self.positional_encoder(X)
         return self.transformer_encoder(X)
 
@@ -47,12 +47,12 @@ class Decoder(nn.Module):
 
         self.fc = nn.Linear(in_features=MAX_LENGTH*EMBEDDING_SIZE, out_features=vocab_size)
 
-    def forward(self, vietnamese_batch, encoder_last_state):
-        X = self.phobert(vietnamese_batch)
+    def forward(self, tgt_batch, encoder_last_state):
+        X, valid_len = self.embedder(tgt_batch)
         X = X + self.positional_encoder(X)
         X = self.transfomer_decoder(tgt=X, memory=encoder_last_state)
         X = X.flatten(start_dim=1)
-        return self.fc(X)
+        return self.fc(X), valid_len
 
 class PositionalEncoder(nn.Module):
     def __init__(self, d_model, dropout=0.1, max_len=MAX_LENGTH):
