@@ -1,6 +1,7 @@
 from torch.utils.data import Dataset
 import pandas as pd
 from pyvi import ViTokenizer
+from torchnlp.encoders.text import StaticTokenizerEncoder
 import sys
 sys.path.append("../")
 
@@ -22,6 +23,16 @@ class IWSLT15EnViDataSet(Dataset):
         'Cả hai đều là một nhánh của cùng một lĩnh_vực trong ngành khoa_học khí_quyển .')
         """
         return self.data_en[index], self.data_vi[index]
+
+    def get_vocab_size(self, lang):
+        assert lang == 'en' or lang == 'vi', "Only 'en' or 'vi' are valid!"
+        if lang == 'vi':
+            encoder = StaticTokenizerEncoder(sample=self.data_vi, min_occurrences=2,
+                                             append_sos=True, append_eos=True)
+        else:
+            encoder = StaticTokenizerEncoder(sample=self.data_en, min_occurrences=2,
+                                             append_sos=True, append_eos=True)
+        return encoder.vocab_size
 
 def load_data(data_path):
     with open(data_path, 'r') as fr:
