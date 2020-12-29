@@ -2,6 +2,7 @@ from torch.utils.data import Dataset
 import pandas as pd
 from pyvi import ViTokenizer
 from torchnlp.encoders.text import StaticTokenizerEncoder
+from .embedder import PhoBERT, BERT
 import sys
 sys.path.append("../")
 
@@ -33,6 +34,15 @@ class IWSLT15EnViDataSet(Dataset):
             encoder = StaticTokenizerEncoder(sample=self.data_en, min_occurrences=2,
                                              append_sos=True, append_eos=True)
         return encoder.vocab_size
+
+def get_labels(batch_of_sentences, lang, device):
+    assert lang == 'en' or lang == 'vi', "Only 'en' or 'vi' are valid!"
+    if lang == 'vi':
+        embedder = PhoBERT().to(device)
+    else:
+        embedder = BERT().to(device)
+    labels = embedder.get_token_indices(batch_of_sentences)
+    return labels
 
 def load_data(data_path):
     with open(data_path, 'r') as fr:
