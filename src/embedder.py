@@ -5,7 +5,9 @@ sys.path.append("../")
 from CONFIG import PhoBERT_REPO, BERT_REPO
 
 class EmbedderBase(torch.nn.Module):
-    embedder = None
+    def __init__(self):
+        super(EmbedderBase, self).__init__()
+        self.embedder = None
 
     def forward(self, tokens):
         with torch.no_grad():
@@ -18,7 +20,9 @@ class PhoBERT(EmbedderBase):
         :input shape: (batch_size, max_length)
         :return: torch Tensor of shape (batch_size, max_length, embedding_size)
     """
-    embedder = AutoModel.from_pretrained(PhoBERT_REPO)
+    def __init__(self):
+        super(PhoBERT, self).__init__()
+        self.embedder = AutoModel.from_pretrained(PhoBERT_REPO)
 
 class BERT(EmbedderBase):
     """
@@ -26,4 +30,6 @@ class BERT(EmbedderBase):
         :input shape: (batch_size, max_length)
         :return: torch Tensor of shape (batch_size, max_length, embedding_size)
     """
-    embedder = AutoModel.from_pretrained(BERT_REPO)
+    def __init__(self):
+        super(BERT, self).__init__()
+        self.embedder = AutoModel.from_pretrained(BERT_REPO)
