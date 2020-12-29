@@ -4,42 +4,33 @@ import math
 import sys
 sys.path.append("../")
 from CONFIG import MAX_LENGTH, EMBEDDING_SIZE, N_TRANSFORMER_LAYERS, N_HEADS, DIM_FEEDFORWARD, VI2EN, EN2VI
-from .embedder import PhoBERT, BERT
 
 class NMT(nn.Module):
-    def __init__(self, mode, tgt_vocab_size):
+    def __init__(self, tgt_vocab_size):
         super(NMT, self).__init__()
-
-        assert mode == VI2EN or mode == EN2VI, f"`mode` must be either {VI2EN} or {EN2VI}"
-        if mode == VI2EN:
-            self.encoder = Encoder(embedder=PhoBERT())
-            self.decoder = Decoder(embedder=BERT(), vocab_size=tgt_vocab_size)
-        else:
-            self.encoder = Encoder(embedder=BERT())
-            self.decoder = Decoder(embedder=PhoBERT(), vocab_size=tgt_vocab_size)
+        self.encoder = Encoder()
+        self.decoder = Decoder(vocab_size=tgt_vocab_size)
 
     def forward(self, src, tgt):
         memory = self.encoder(src)
         return self.decoder(tgt, memory)
 
 class Encoder(nn.Module):
-    def __init__(self, embedder):
+    def __init__(self):
         super(Encoder, self).__init__()
-        self.embedder = embedder
         self.positional_encoder = PositionalEncoder(d_model=EMBEDDING_SIZE)
 
         encoder_layer = nn.TransformerEncoderLayer(d_model=EMBEDDING_SIZE, nhead=N_HEADS, dim_feedforward=DIM_FEEDFORWARD)
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer, N_TRANSFORMER_LAYERS)
 
-    def forward(self, src_batch):
-        X, _ = self.embedder(src_batch) # (batch_size, max_len, embedding_size)
+    def forward(self, src_tokens):
+        X, _ = self.embedder(src_tokens) # (batch_size, max_len, embedding_size)
         X = X + self.positional_encoder(X)
         return self.transformer_encoder(X)
 
 class Decoder(nn.Module):
-    def __init__(self, embedder, vocab_size):
+    def __init__(self, vocab_size):
         super(Decoder, self).__init__()
-        self.embedder = embedder
         self.positional_encoder = PositionalEncoder(d_model=EMBEDDING_SIZE)
 
         decoder_layer = nn.TransformerDecoderLayer(d_model=EMBEDDING_SIZE, nhead=N_HEADS, dim_feedforward=DIM_FEEDFORWARD)
@@ -47,8 +38,8 @@ class Decoder(nn.Module):
 
         self.fc = nn.Linear(in_features=EMBEDDING_SIZE, out_features=vocab_size)
 
-    def forward(self, tgt_batch, encoder_last_state):
-        X, valid_len = self.embedder(tgt_batch)
+    def forward(self, tgt_tokens, encoder_last_state):
+        X, valid_len = self.embedder(tgt_tokens)
         X = X + self.positional_encoder(X)
         X = self.transfomer_decoder(tgt=X, memory=encoder_last_state)
         return self.fc(X), valid_len
