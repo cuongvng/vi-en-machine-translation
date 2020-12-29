@@ -1,5 +1,4 @@
 import unittest
-import torch
 from CONFIG import MAX_LENGTH, EMBEDDING_SIZE
 import sys
 sys.path.append("../")
@@ -29,7 +28,6 @@ class TestEmbedders(unittest.TestCase):
         embedding, valid_len = phobert(inputs)
         self.assertEqual(embedding.shape, (len(sentences), MAX_LENGTH, EMBEDDING_SIZE))
         self.assertListEqual(valid_len.tolist(), valid_lengths)
-
 
 if __name__ == '__main__':
     unittest.main()
