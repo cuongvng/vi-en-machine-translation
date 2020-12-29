@@ -4,3 +4,4 @@ pytorch-nlp @ git+https://github.com/PetrochukM/PyTorch-NLP.git@be1a08edbd898d30
 pyvi==0.1
 torch==1.4.0
 transformers==4.1.1
+torchsummary==1.5.1
