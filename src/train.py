@@ -17,9 +17,10 @@ def train():
     data_loader = DataLoader(data_train, batch_size=BATCH_SIZE, shuffle=True, drop_last=False)
     tgt_vocab_size = data_train.vi_vocab_size if MODE == EN2VI else data_train.en_vocab_size
 
-    model = NMT(tgt_vocab_size=tgt_vocab_size)
+    model = NMT(mode=MODE, tgt_vocab_size=tgt_vocab_size)
     model.apply(xavier_init_weights)
     model.to(device)
+    model.train()
 
     criterion = MaskedPaddingCrossEntropyLoss().to(device)
     optimizer = Adam(model.parameters())
@@ -28,8 +29,6 @@ def train():
         print(f"\nEpoch: {epoch+1}")
 
         for b, (en_tokens, en_valid_len, vi_tokens, vi_valid_len) in enumerate(data_loader):
-            print(f"\tBatch: {b+1}")
-
             if MODE == EN2VI:
                 src, tgt = en_tokens.to(device), vi_tokens.to(device)
                 valid_lengths = vi_valid_len.to(device)
@@ -39,12 +38,12 @@ def train():
 
             optimizer.zero_grad()
             logit_outputs = model(src, tgt)
-            loss = criterion(pred=logit_outputs, label=tgt, valid_len=valid_lengths).sum()
+            loss = criterion(pred=logit_outputs, label=tgt, valid_len=valid_lengths, device=device).sum()
             loss.backward()
             optimizer.step()
 
             if b%100 == 0:
-                print(f"\tLoss: {loss:.4f}")
+                print(f"\tBatch {b + 1}; Loss: {loss:.4f}")
             ## Free up GPU memory
             del src, tgt, logit_outputs, loss
             torch.cuda.empty_cache()
