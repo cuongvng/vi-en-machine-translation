@@ -45,13 +45,12 @@ class Decoder(nn.Module):
         decoder_layer = nn.TransformerDecoderLayer(d_model=EMBEDDING_SIZE, nhead=N_HEADS, dim_feedforward=DIM_FEEDFORWARD)
         self.transfomer_decoder = nn.TransformerDecoder(decoder_layer, N_TRANSFORMER_LAYERS)
 
-        self.fc = nn.Linear(in_features=MAX_LENGTH*EMBEDDING_SIZE, out_features=vocab_size)
+        self.fc = nn.Linear(in_features=EMBEDDING_SIZE, out_features=vocab_size)
 
     def forward(self, tgt_batch, encoder_last_state):
         X, valid_len = self.embedder(tgt_batch)
         X = X + self.positional_encoder(X)
         X = self.transfomer_decoder(tgt=X, memory=encoder_last_state)
-        X = X.flatten(start_dim=1)
         return self.fc(X), valid_len
 
 class PositionalEncoder(nn.Module):
