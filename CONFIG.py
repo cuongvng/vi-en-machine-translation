@@ -1,8 +1,15 @@
 VI2EN = "vi2en"
 EN2VI = "en2vi"
+MODE = EN2VI
 
 BERT_REPO = "bert-base-uncased"
-PHOBERT_REPO = "vinai/phobert-base"
+PhoBERT_REPO = "vinai/phobert-base"
+BERT_BOS_INDEX = 101
+BERT_EOS_INDEX = 102
+BERT_PADDING_INDEX = 0
+PhoBERT_BOS_INDEX = 0
+PhoBERT_EOS_INDEX = 2
+PhoBERT_PADDING_INDEX = 1
 
 MAX_LENGTH = 12
 EMBEDDING_SIZE = 768
