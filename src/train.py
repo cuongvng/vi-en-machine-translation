@@ -30,15 +30,17 @@ def train(mode, checkpoint_path):
     criterion = MaskedPaddingCrossEntropyLoss().to(device)
     optimizer = Adam(model.parameters())
 
-    prev_epochs = 0
+    prev_epoch = 0
     if checkpoint_path.exists():  # Resume training
         model, optimizer, prev_epoch = load_checkpoint(model, optimizer, checkpoint_path)
+        print(f"Resume training from {prev_epoch} epochs!")
     else:
         model.apply(xavier_init_weights)
+        print("Training from start!")
 
     model.train()
-    for epoch in range(N_EPOCHS-prev_epochs):
-        print(f"\nEpoch: {epoch+prev_epochs+1}")
+    for epoch in range(N_EPOCHS-prev_epoch):
+        print(f"\nEpoch: {epoch+prev_epoch+1}")
 
         for b, (en_tokens, en_valid_len, vi_tokens, vi_valid_len) in enumerate(data_loader):
             if mode == EN2VI:
