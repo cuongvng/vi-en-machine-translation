@@ -9,21 +9,22 @@ from model import NMT
 from loss import MaskedPaddingCrossEntropyLoss
 import sys
 sys.path.append("../")
-from CONFIG import N_EPOCHS, BATCH_SIZE, EN2VI, MODE, MAX_LENGTH
+from CONFIG import N_EPOCHS, BATCH_SIZE, EN2VI, VI2EN
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Device: {device}")
 
-def train(checkpoint_path):
+def train(mode, checkpoint_path):
     # Data
     data_train = IWSLT15EnViDataSet(en_path="../data/train-en-vi/train.en",
                                     vi_path="../data/train-en-vi/train.vi")
-    data_loader = DataLoader(data_train, batch_size=BATCH_SIZE, shuffle=True, drop_last=False)
-    tgt_vocab_size = data_train.vi_vocab_size if MODE == EN2VI else data_train.en_vocab_size
+    data_loader = DataLoader(data_train, batch_size=BATCH_SIZE,
+                             shuffle=True, drop_last=False)
+    tgt_vocab_size = data_train.vi_vocab_size if mode == EN2VI else data_train.en_vocab_size
     print("Loading data done!")
 
     # Model & Optimizer
-    model = NMT(mode=MODE, tgt_vocab_size=tgt_vocab_size)
+    model = NMT(mode=mode, tgt_vocab_size=tgt_vocab_size)
     model.to(device)
 
     criterion = MaskedPaddingCrossEntropyLoss().to(device)
@@ -40,7 +41,7 @@ def train(checkpoint_path):
         print(f"\nEpoch: {epoch+prev_epochs+1}")
 
         for b, (en_tokens, en_valid_len, vi_tokens, vi_valid_len) in enumerate(data_loader):
-            if MODE == EN2VI:
+            if mode == EN2VI:
                 src, tgt = en_tokens.to(device), vi_tokens.to(device)
                 valid_lengths = vi_valid_len.to(device)
             else:
@@ -53,7 +54,7 @@ def train(checkpoint_path):
             loss.backward()
             optimizer.step()
 
-            if b%300 == 0:
+            if b%1000 == 0:
                 print(f"\tBatch {b}; Loss: {loss:.2f}")
 
             ## Free up GPU memory
@@ -86,12 +87,16 @@ def xavier_init_weights(model):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("checkpoint_dir", type=str, default="../model/",
+    parser.add_argument("--mode", choices=[EN2VI, VI2EN], type=str, default=EN2VI,
+                        help="Choose source and target language")
+    parser.add_argument("--checkpoint_dir", type=str, default="../model/",
                         help="Directory to save checkpoints")
     args = parser.parse_args()
+    mode = args.mode
     checkpoint_dir = args.checkpoint_dir
     if not Path(checkpoint_dir).exists():
         os.mkdir(checkpoint_dir)
     CHECKPOINT_PATH = Path(os.path.join(checkpoint_dir, "model.pt"))
 
-    train(checkpoint_path=CHECKPOINT_PATH)
+    print("MODE:", mode)
+    train(mode=mode, checkpoint_path=CHECKPOINT_PATH)
