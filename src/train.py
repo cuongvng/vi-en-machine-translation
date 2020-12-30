@@ -96,7 +96,7 @@ if __name__ == "__main__":
     checkpoint_dir = args.checkpoint_dir
     if not Path(checkpoint_dir).exists():
         os.mkdir(checkpoint_dir)
-    CHECKPOINT_PATH = Path(os.path.join(checkpoint_dir, "model.pt"))
+    CHECKPOINT_PATH = Path(os.path.join(checkpoint_dir, f"model_{mode}.pt"))
 
     print("MODE:", mode)
     train(mode=mode, checkpoint_path=CHECKPOINT_PATH)
