@@ -51,7 +51,7 @@ def train(mode, checkpoint_path):
                 valid_lengths = en_valid_len.to(device)
 
             optimizer.zero_grad()
-            logit_outputs = model(src, tgt)
+            decoder_state, logit_outputs = model(src, tgt)
             loss = criterion(pred=logit_outputs, label=tgt, valid_len=valid_lengths, device=device).sum()
             loss.backward()
             optimizer.step()
@@ -60,7 +60,7 @@ def train(mode, checkpoint_path):
                 print(f"\tBatch {b}; Loss: {loss:.2f}")
 
             ## Free up GPU memory
-            del src, tgt, logit_outputs, loss
+            del src, tgt, decoder_state, logit_outputs, loss
             torch.cuda.empty_cache()
 
         save_checkpoint(model, optimizer, prev_epoch+epoch+1, checkpoint_path)

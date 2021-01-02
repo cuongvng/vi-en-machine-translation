@@ -53,8 +53,8 @@ class Decoder(nn.Module):
         self.fc = nn.Linear(in_features=EMBEDDING_SIZE, out_features=vocab_size)
 
     def forward(self, X, encoder_last_state):
-        X = self.transfomer_decoder(tgt=X, memory=encoder_last_state)
-        return self.fc(X)
+        decoder_state = self.transfomer_decoder(tgt=X, memory=encoder_last_state)
+        return decoder_state, self.fc(decoder_state)
 
 class PositionalEncoder(nn.Module):
     def __init__(self, d_model, dropout=0.1, max_len=MAX_LENGTH):
