@@ -63,6 +63,12 @@ class TokenizerBase(torch.nn.Module):
     def get_vocab_size(self):
         return self.tokenizer.vocab_size
 
+    def convert_ids_to_meaningful_tokens(self, ids):
+        tokens = self.tokenizer.convert_ids_to_tokens(ids)
+        # Remove BOS, EOS, PADDING TOKENS
+        tokens = [t for t in tokens if t not in [self.BOS_TOKEN, self.EOS_TOKEN, self.PADDING_TOKEN]]
+        return tokens
+
 class BertTokenizer(TokenizerBase):
     """
     def forward(self, list_of_sentences):
