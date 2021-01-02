@@ -3,10 +3,10 @@ from torch.utils.data import Dataset
 from transformers import AutoTokenizer
 import pandas as pd
 from pyvi import ViTokenizer
-from torchnlp.encoders.text import StaticTokenizerEncoder
 import sys
 sys.path.append("../")
-from CONFIG import MAX_LENGTH, PhoBERT_REPO, BERT_REPO, BERT_PADDING_INDEX, PhoBERT_PADDING_INDEX
+from CONFIG import MAX_LENGTH, BERT_REPO, BERT_PADDING_INDEX, \
+    PhoBERT_REPO, PhoBERT_PADDING_INDEX
 
 class IWSLT15EnViDataSet(Dataset):
     def __init__(self, en_path, vi_path):
@@ -15,9 +15,6 @@ class IWSLT15EnViDataSet(Dataset):
         # Segment Vietnamese words
         data_vi = data_vi.apply(lambda s: ViTokenizer.tokenize(s))
 
-        self.en_vocab_size = _get_vocab_size(data_en)
-        self.vi_vocab_size = _get_vocab_size(data_vi)
-
         # Tokenizing
         self.bert_tokenizer = BertTokenizer()
         self.phobert_tokenizer = PhoBertTokenizer()
@@ -25,7 +22,15 @@ class IWSLT15EnViDataSet(Dataset):
         self.tokens_en, self.valid_len_en = self.bert_tokenizer(data_en.tolist())
         self.tokens_vi, self.valid_len_vi = self.phobert_tokenizer(data_vi.tolist())
 
-        assert self.tokens_en.shape[0] == self.tokens_vi.shape[0], "Numbers of vietnamese and english sentences do not match!"
+        assert self.tokens_en.shape[0] == self.tokens_vi.shape[0], \
+            "Numbers of vietnamese and english sentences do not match!"
+
+        self.en_vocab = self.bert_tokenizer.get_vocab()
+        self.vi_vocab = self.phobert_tokenizer.get_vocab()
+        self.en_vocab_size = self.bert_tokenizer.get_vocab_size()
+        self.vi_vocab_size = self.phobert_tokenizer.get_vocab_size()
+        print("English vocab size:", self.en_vocab_size)
+        print("Vietnamese vocab size:", self.vi_vocab_size)
 
     def __len__(self):
         return self.tokens_vi.shape[0]
@@ -47,6 +52,12 @@ class TokenizerBase(torch.nn.Module):
             tokens = self.tokenizer(list_of_sentences, truncation=True,
                                     padding="max_length", max_length=MAX_LENGTH)
         return torch.tensor(tokens['input_ids'])
+
+    def get_vocab(self)->dict:
+        return self.tokenizer.get_vocab()
+
+    def get_vocab_size(self):
+        return self.tokenizer.vocab_size
 
 class BertTokenizer(TokenizerBase):
     """
@@ -77,8 +88,3 @@ def load_data(data_path):
         list_sentences = fr.readlines()
     sentence_series = pd.Series(list_sentences)
     return sentence_series
-
-def _get_vocab_size(data):
-    encoder = StaticTokenizerEncoder(sample=data, min_occurrences=2,
-                                         append_sos=True, append_eos=True)
-    return encoder.vocab_size
