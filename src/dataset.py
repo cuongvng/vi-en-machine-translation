@@ -5,8 +5,7 @@ import pandas as pd
 from pyvi import ViTokenizer
 import sys
 sys.path.append("../")
-from CONFIG import MAX_LENGTH, BERT_REPO, BERT_PADDING_INDEX, \
-    PhoBERT_REPO, PhoBERT_PADDING_INDEX
+from CONFIG import MAX_LENGTH, BERT_REPO, PhoBERT_REPO
 
 class IWSLT15EnViDataSet(Dataset):
     def __init__(self, en_path, vi_path):
@@ -40,11 +39,16 @@ class IWSLT15EnViDataSet(Dataset):
 
 class TokenizerBase(torch.nn.Module):
     tokenizer = None
-    padding_index = None
+    BOS_INDEX = None
+    EOS_INDEX = None
+    PADDING_INDEX = None
+    BOS_TOKEN = None
+    EOS_TOKEN = None
+    PADDING_TOKEN = None
 
     def forward(self, list_of_sentences):
         tokens = self.get_token_indices(list_of_sentences)
-        valid_len = torch.where(tokens != self.padding_index, torch.tensor(1), torch.tensor(0)).sum(dim=1)
+        valid_len = torch.where(tokens != self.PADDING_INDEX, torch.tensor(1), torch.tensor(0)).sum(dim=1)
         return tokens, valid_len
 
     def get_token_indices(self, list_of_sentences):
@@ -69,7 +73,12 @@ class BertTokenizer(TokenizerBase):
         :return: torch Tensor of shape (batch_size, max_length)
     """
     tokenizer = AutoTokenizer.from_pretrained(BERT_REPO)
-    padding_index = BERT_PADDING_INDEX
+    BOS_INDEX = 101
+    EOS_INDEX = 102
+    PADDING_INDEX = 0
+    BOS_TOKEN = '[CLS]'
+    EOS_TOKEN = '[SEP]'
+    PADDING_TOKEN = '[PAD]'
 
 class PhoBertTokenizer(TokenizerBase):
     """
@@ -81,7 +90,12 @@ class PhoBertTokenizer(TokenizerBase):
         :return: torch Tensor of shape (batch_size, max_length)
     """
     tokenizer = AutoTokenizer.from_pretrained(PhoBERT_REPO)
-    padding_index = PhoBERT_PADDING_INDEX
+    BOS_INDEX = 0
+    EOS_INDEX = 2
+    PADDING_INDEX = 1
+    BOS_TOKEN = '<s>'
+    EOS_TOKEN = '</s>'
+    PADDING_TOKEN = '<pad>'
 
 def load_data(data_path):
     with open(data_path, 'r') as fr:
