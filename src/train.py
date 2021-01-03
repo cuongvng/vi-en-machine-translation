@@ -19,7 +19,7 @@ def train(mode, checkpoint_path):
     data_train = IWSLT15EnViDataSet(en_path="../data/dev-2012-en-vi/tst2012.en",
                                     vi_path="../data/dev-2012-en-vi/tst2012.vi")
     data_loader = DataLoader(data_train, batch_size=BATCH_SIZE,
-                             shuffle=True, drop_last=False)
+                             shuffle=False, drop_last=False)
     tgt_vocab_size = data_train.vi_vocab_size if mode == EN2VI else data_train.en_vocab_size
     print("Loading data done!")
 
