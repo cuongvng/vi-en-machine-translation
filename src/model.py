@@ -17,7 +17,7 @@ class NMT(nn.Module):
         self.encoder = Encoder()
         self.decoder = Decoder(vocab_size=tgt_vocab_size)
 
-    def forward(self, src, tgt):
+    def forward(self, src, tgt, src_key_padding_mask=None, tgt_key_padding_mask=None):
         # Embedding
         if self.mode == EN2VI:
             src = self.bert(src)
@@ -30,8 +30,8 @@ class NMT(nn.Module):
         src = src + self.positional_encoder(src)
         tgt = src + self.positional_encoder(tgt)
 
-        memory = self.encoder(src)
-        return self.decoder(tgt, memory)
+        memory = self.encoder(src, src_key_padding_mask)
+        return self.decoder(tgt, memory, tgt_key_padding_mask)
 
 class Encoder(nn.Module):
     def __init__(self):
@@ -40,8 +40,9 @@ class Encoder(nn.Module):
         encoder_layer = nn.TransformerEncoderLayer(d_model=EMBEDDING_SIZE, nhead=N_HEADS, dim_feedforward=DIM_FEEDFORWARD)
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer, N_TRANSFORMER_LAYERS)
 
-    def forward(self, X):
-        return self.transformer_encoder(X)
+    def forward(self, X, src_key_padding_mask=None):
+        X = X.permute(1, 0, 2) # (seq_len, batch_size, embedding_size)
+        return self.transformer_encoder(X, src_key_padding_mask=src_key_padding_mask)
 
 class Decoder(nn.Module):
     def __init__(self, vocab_size):
@@ -52,8 +53,11 @@ class Decoder(nn.Module):
 
         self.fc = nn.Linear(in_features=EMBEDDING_SIZE, out_features=vocab_size)
 
-    def forward(self, X, encoder_last_state):
-        decoder_state = self.transfomer_decoder(tgt=X, memory=encoder_last_state)
+    def forward(self, X, encoder_last_state, tgt_key_padding_mask=None):
+        X = X.permute(1, 0, 2) # (seq_len, batch_size, embedding_size)
+        decoder_state = self.transfomer_decoder(tgt=X, memory=encoder_last_state,
+                                                tgt_key_padding_mask=tgt_key_padding_mask)
+        decoder_state = decoder_state.permute(1, 0, 2) # (batch_size, seq_len, embedding_size)
         return decoder_state, self.fc(decoder_state)
 
 class PositionalEncoder(nn.Module):
