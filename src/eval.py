@@ -2,6 +2,7 @@ import torch
 from model import NMT, PositionalEncoder
 from dataset import PhoBertTokenizer, BertTokenizer
 from embedder import BERT, PhoBERT
+from train import mask_padding
 import sys
 sys.path.append("../")
 from CONFIG import EMBEDDING_SIZE, EN2VI, VI2EN, MAX_LENGTH
@@ -16,6 +17,7 @@ def translate_en2vi(model, en_sentence, length, device):
     vi_embedder.to(device)
 
     en_tokens, valid_len = en_tokenizer([en_sentence])
+    en_padding_mask = mask_padding(en_tokens, valid_len, device)
     en_embedding = en_embedder(en_tokens)
     en_embedding = en_embedding.to(device)
 
@@ -28,10 +30,9 @@ def translate_en2vi(model, en_sentence, length, device):
     model.eval()
     with torch.no_grad():
         en_embedding = en_embedding + ps(en_embedding)
-        encoder_state = model.encoder(en_embedding)
+        encoder_state = model.encoder(en_embedding, en_padding_mask)
         # Initialize the input and memory of the decoder by the BOS token and `encoder_state`
         decoder_X = torch.tensor([[vi_tokenizer.BOS_INDEX]], dtype=torch.long, device=device)
-        decoder_memory = encoder_state
 
         for i in range(length):
             # Embedding + Positional Encoding
@@ -39,7 +40,7 @@ def translate_en2vi(model, en_sentence, length, device):
             decoder_X = decoder_X + ps(decoder_X)
 
             # Decoder forward pass
-            decoder_memory, logit_outputs = model.decoder(decoder_X, decoder_memory)
+            decoder_memory, logit_outputs = model.decoder(decoder_X, encoder_state)
             # Use the token with highest probability as the input of the next time step
             decoder_X = logit_outputs[:, -1:, :].argmax(dim=2)
             pred_idx = decoder_X.squeeze(dim=0).to(torch.int32).item()
@@ -82,7 +83,7 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     vi = translate_en2vi(model, en_sentence=en, length=MAX_LENGTH, device=device)
-    print(vi)
+    print("vi:", vi)
 
 if __name__ == '__main__':
     main()

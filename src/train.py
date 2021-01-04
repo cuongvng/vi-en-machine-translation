@@ -44,16 +44,24 @@ def train(mode, checkpoint_path):
         print(f"\nEpoch: {epoch+prev_epoch+1}")
 
         for b, (en_tokens, en_valid_len, vi_tokens, vi_valid_len) in enumerate(data_loader):
+            en_tokens, vi_tokens = en_tokens.to(device), vi_tokens.to(device)
+            en_valid_len, vi_valid_len = en_valid_len.to(device), vi_valid_len.to(device)
+
+            en_padding_masks = mask_padding(en_tokens, en_valid_len, device)
+            vi_padding_masks = mask_padding(vi_tokens, vi_valid_len, device)
+
             if mode == EN2VI:
-                src, tgt = en_tokens.to(device), vi_tokens.to(device)
-                valid_lengths = vi_valid_len.to(device)
+                src, tgt = en_tokens, vi_tokens
+                tgt_valid_len = vi_valid_len
+                src_masks, tgt_masks = en_padding_masks, vi_padding_masks
             else:
-                src, tgt = vi_tokens.to(device), en_tokens.to(device)
-                valid_lengths = en_valid_len.to(device)
+                src, tgt = vi_tokens, en_tokens
+                tgt_valid_len = en_valid_len
+                src_masks, tgt_masks = vi_padding_masks, en_padding_masks
 
             optimizer.zero_grad()
-            decoder_state, logit_outputs = model(src, tgt)
-            loss = criterion(pred=logit_outputs, label=tgt, valid_len=valid_lengths, device=device).sum()
+            decoder_state, logit_outputs = model(src, tgt, src_masks, tgt_masks)
+            loss = criterion(pred=logit_outputs, label=tgt, valid_len=tgt_valid_len, device=device).sum()
             loss.backward()
             clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
@@ -62,10 +70,17 @@ def train(mode, checkpoint_path):
                 print(f"\tBatch {b}; Loss: {loss:.2f}")
 
             ## Free up GPU memory
-            del src, tgt, decoder_state, logit_outputs, loss
+            del src, tgt, en_valid_len, vi_valid_len, decoder_state, logit_outputs, loss
             torch.cuda.empty_cache()
 
         save_checkpoint(model, optimizer, prev_epoch+epoch+1, checkpoint_path)
+
+def mask_padding(X, valid_len, device):
+    positions = torch.arange(X.shape[1]).unsqueeze(dim=0).to(device)  # (1, seq_len)
+    valid_len = torch.unsqueeze(valid_len, dim=1)  # (batch_size, 1)
+
+    masks = positions >= valid_len
+    return masks
 
 def grad_clipping(model, theta):
     assert isinstance(model, torch.nn.Module)
