@@ -1,5 +1,6 @@
 import torch
 from torch.utils.data import DataLoader
+from torch.nn.utils import clip_grad_norm_
 from torch.optim import Adam
 import os
 import argparse
@@ -54,6 +55,7 @@ def train(mode, checkpoint_path):
             decoder_state, logit_outputs = model(src, tgt)
             loss = criterion(pred=logit_outputs, label=tgt, valid_len=valid_lengths, device=device).sum()
             loss.backward()
+            clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
 
             if b%1000 == 0:
@@ -64,6 +66,15 @@ def train(mode, checkpoint_path):
             torch.cuda.empty_cache()
 
         save_checkpoint(model, optimizer, prev_epoch+epoch+1, checkpoint_path)
+
+def grad_clipping(model, theta):
+    assert isinstance(model, torch.nn.Module)
+    params = [p for p in model.parameters() if p.requires_grad]
+
+    norms = torch.sqrt(sum(torch.sum(p**2) for p in params))
+    if norms > theta:
+        for p in params:
+            p.grad.data.clamp_()
 
 def save_checkpoint(model, optimizer, epoch, checkpoint_path):
     checkpoint = {
