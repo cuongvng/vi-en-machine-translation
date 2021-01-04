@@ -66,7 +66,7 @@ def train(mode, checkpoint_path):
             clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
 
-            if b%1000 == 0:
+            if b%50 == 0:
                 print(f"\tBatch {b}; Loss: {loss:.2f}")
 
             ## Free up GPU memory
