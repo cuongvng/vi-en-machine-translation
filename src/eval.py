@@ -32,9 +32,11 @@ def translate_en2vi(model, en_sentence, length, device):
         en_embedding = en_embedding + ps(en_embedding)
         encoder_state = model.encoder(en_embedding, en_padding_mask)
         # Initialize the input and memory of the decoder by the BOS token and `encoder_state`
-        decoder_X = torch.tensor([[vi_tokenizer.BOS_INDEX]], dtype=torch.long, device=device)
-
+        decoder_X = torch.zeros((1, length), device=device)
+        cur_token_idx = vi_tokenizer.BOS_INDEX
         for i in range(length):
+            decoder_X[0][i] = cur_token_idx
+
             # Embedding + Positional Encoding
             decoder_X = vi_embedder(decoder_X)
             decoder_X = decoder_X + ps(decoder_X)
@@ -42,7 +44,7 @@ def translate_en2vi(model, en_sentence, length, device):
             # Decoder forward pass
             decoder_memory, logit_outputs = model.decoder(decoder_X, encoder_state)
             # Use the token with highest probability as the input of the next time step
-            decoder_X = logit_outputs[:, -1:, :].argmax(dim=2)
+            cur_token_idx = logit_outputs[:, i, :].argmax(dim=1)
             pred_idx = decoder_X.squeeze(dim=0).to(torch.int32).item()
 
             if pred_idx == vi_tokenizer.EOS_INDEX:
