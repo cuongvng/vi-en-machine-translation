@@ -39,6 +39,6 @@ class MaskedPaddingCrossEntropyLoss(nn.CrossEntropyLoss):
         masks = torch.arange(X.shape[1]).unsqueeze(dim=0).to(device) # (1, seq_len)
         valid_len = torch.unsqueeze(valid_len, dim=1) # (batch_size, 1)
 
-        masks = masks < valid_len
-        X[~masks] = value
+        masks = masks >= valid_len
+        X[masks] = value
         return X
