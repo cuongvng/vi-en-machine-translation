@@ -12,7 +12,7 @@ class MaskedPaddingCrossEntropyLoss(nn.CrossEntropyLoss):
         masks = self._mask_padding_tokens(torch.ones_like(label), valid_len, device)
         unmasked_loss = super(MaskedPaddingCrossEntropyLoss, self).forward(input=pred.permute(0, 2, 1), target=label)
         masked_padding_loss = unmasked_loss * masks
-        mean_loss_over_seq = masked_padding_loss.mean(dim=1)
+        mean_loss_over_seq = masked_padding_loss.sum(dim=1)
         return mean_loss_over_seq
 
     def _mask_padding_tokens(self, X, valid_len, device, value=0):
