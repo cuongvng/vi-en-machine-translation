@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import DataLoader
 from torch.nn.utils import clip_grad_norm_
 from torch.optim import Adam
+from torchnlp.encoders.text import DEFAULT_SOS_INDEX
 import os
 import argparse
 from pathlib import Path
@@ -63,7 +64,12 @@ def train(mode, checkpoint_path):
                 src_masks, tgt_masks = vi_padding_masks, en_padding_masks
 
             optimizer.zero_grad()
-            decoder_state, logit_outputs = model(src, tgt, src_masks, tgt_masks)
+
+            # Teacher forcing
+            sos = torch.tensor([[DEFAULT_SOS_INDEX]*tgt.shape[0]], device=device).reshape(-1, 1)
+            decoder_X = torch.cat((sos, tgt[:, :-1]), dim=1)
+
+            decoder_state, logit_outputs = model(src, decoder_X, src_masks, tgt_masks)
             loss = criterion(pred=logit_outputs, label=tgt, valid_len=tgt_valid_len, device=device).sum()
             loss.backward()
             clip_grad_norm_(model.parameters(), max_norm=1.0)
