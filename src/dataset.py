@@ -43,7 +43,7 @@ class IWSLT15EnViDataSet(Dataset):
 
 def get_tokenizer(list_training_sentences):
     tokenizer = StaticTokenizerEncoder(sample=list_training_sentences, min_occurrences=2,
-                                     append_sos=True, append_eos=True)
+                                     append_sos=False, append_eos=True)
     return tokenizer
 
 def convert_tokens_to_indices(sentence, tokenizer, max_len=MAX_LENGTH):
