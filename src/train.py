@@ -21,11 +21,14 @@ def train(mode, checkpoint_path):
                                     vi_path="../data/dev-2012-en-vi/tst2012.vi")
     data_loader = DataLoader(data_train, batch_size=BATCH_SIZE,
                              shuffle=False, drop_last=False)
-    tgt_vocab_size = data_train.vi_vocab_size if mode == EN2VI else data_train.en_vocab_size
+    if mode == EN2VI:
+        src_vocab_size, tgt_vocab_size = data_train.en_vocab_size, data_train.vi_vocab_size
+    else:
+        src_vocab_size, tgt_vocab_size = data_train.vi_vocab_size, data_train.en_vocab_size
     print("Loading data done!")
 
     # Model & Optimizer
-    model = NMT(mode=mode, tgt_vocab_size=tgt_vocab_size)
+    model = NMT(mode=mode, src_vocab_size=src_vocab_size, tgt_vocab_size=tgt_vocab_size)
     model.to(device)
 
     criterion = MaskedPaddingCrossEntropyLoss().to(device)
