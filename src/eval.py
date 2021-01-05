@@ -1,57 +1,42 @@
 import torch
-from model import NMT, PositionalEncoder
-from dataset import PhoBertTokenizer, BertTokenizer
-from embedder import BERT, PhoBERT
-from train import mask_padding
+from torchnlp.encoders.text import DEFAULT_SOS_INDEX, DEFAULT_EOS_INDEX
+from model import NMT
+from dataset import IWSLT15EnViDataSet, convert_indices_to_tokens, convert_tokens_to_indices
 import sys
 sys.path.append("../")
 from CONFIG import EMBEDDING_SIZE, EN2VI, VI2EN, MAX_LENGTH
 
-def translate_en2vi(model, en_sentence, length, device):
+def translate_en2vi(en_sentence, length, model, tokenizer_en, tokenizer_vi, device):
     assert isinstance(model, NMT), "Incompatible model!"
 
-    en_tokenizer = BertTokenizer()
-    vi_tokenizer = PhoBertTokenizer()
-    en_embedder = BERT()
-    vi_embedder = PhoBERT()
-    vi_embedder.to(device)
-
-    en_tokens, valid_len = en_tokenizer([en_sentence])
-    en_padding_mask = mask_padding(en_tokens, valid_len, device)
-    en_embedding = en_embedder(en_tokens)
-    en_embedding = en_embedding.to(device)
-
-    ps = PositionalEncoder(d_model=EMBEDDING_SIZE)
-    ps.to(device)
+    en_tokens, valid_len = convert_tokens_to_indices(en_sentence, tokenizer_en)
+    en_tokens = en_tokens.reshape(-1, 1).to(device)
+    # en_padding_mask = mask_padding(en_tokens, valid_len, device)
 
     pred_indices = []
 
     model.to(device)
     model.eval()
     with torch.no_grad():
-        en_embedding = en_embedding + ps(en_embedding)
-        encoder_state = model.encoder(en_embedding, en_padding_mask)
+        encoder_state = model.encoder(en_tokens)
+
         # Initialize the input and memory of the decoder by the BOS token and `encoder_state`
-        decoder_X = torch.zeros((1, length), device=device)
-        cur_token_idx = vi_tokenizer.BOS_INDEX
+        dec_X = torch.unsqueeze(torch.tensor(
+            [DEFAULT_SOS_INDEX], dtype=torch.long, device=device), dim=0)
+        decoder_memory = encoder_state
+
         for i in range(length):
-            decoder_X[0][i] = cur_token_idx
-
-            # Embedding + Positional Encoding
-            decoder_X = vi_embedder(decoder_X)
-            decoder_X = decoder_X + ps(decoder_X)
-
             # Decoder forward pass
-            decoder_memory, logit_outputs = model.decoder(decoder_X, encoder_state)
+            decoder_memory, logit_outputs = model.decoder(dec_X, decoder_memory)
             # Use the token with highest probability as the input of the next time step
-            cur_token_idx = logit_outputs[:, i, :].argmax(dim=1)
-            pred_idx = decoder_X.squeeze(dim=0).to(torch.int32).item()
+            dec_X = logit_outputs[:, i, :].argmax(dim=1)
+            pred_idx = dec_X.squeeze(dim=0).to(torch.int32).item()
 
-            if pred_idx == vi_tokenizer.EOS_INDEX:
+            if pred_idx == DEFAULT_EOS_INDEX:
                 break
             pred_indices.append(pred_idx)
 
-    translated_sentence = " ".join(vi_tokenizer.convert_ids_to_meaningful_tokens(pred_indices))
+    translated_sentence = " ".join(convert_indices_to_tokens(pred_indices, tokenizer_vi))
     translated_sentence.replace('_', ' ') # Remove '_' of segmented words
     return translated_sentence
 
@@ -77,14 +62,20 @@ def _get_n_grams_precision(pred, label, n):
     pass
 
 def main():
-    model = NMT(mode=EN2VI, tgt_vocab_size=64000)
+    dataset = IWSLT15EnViDataSet(en_path="../data/dev-2012-en-vi/tst2012.en",
+                                 vi_path="../data/dev-2012-en-vi/tst2012.vi")
+    tokenizer_en = dataset.tokenizer_en
+    tokenizer_vi = dataset.tokenizer_vi
+
+    model = NMT(mode=EN2VI, src_vocab_size=1765, tgt_vocab_size=1745)
     checkpoint = torch.load("../model/model_en2vi.pt")
     model.load_state_dict(checkpoint["model"])
 
     en = "I go."
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    vi = translate_en2vi(model, en_sentence=en, length=MAX_LENGTH, device=device)
+    vi = translate_en2vi(en_sentence=en, length=MAX_LENGTH, model=model,
+                         tokenizer_en=tokenizer_en, tokenizer_vi=tokenizer_vi, device=device)
     print("vi:", vi)
 
 if __name__ == '__main__':
