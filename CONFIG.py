@@ -5,7 +5,7 @@ MODE = EN2VI
 BERT_REPO = "bert-base-uncased"
 PhoBERT_REPO = "vinai/phobert-base"
 
-MAX_LENGTH = 50
+MAX_LENGTH = 25
 EMBEDDING_SIZE = 768
 N_TRANSFORMER_LAYERS = 4
 N_HEADS = 4
