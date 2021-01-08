@@ -71,12 +71,21 @@ def main():
     checkpoint = torch.load("../model/model_en2vi.pt")
     model.load_state_dict(checkpoint["model"])
 
-    en = "I go."
+    ens = [
+      "I go.",
+      "My grandmother never let me forget his life . ",
+      "I was so shocked .",
+      "As you can see , the river can be very narrow at certain points , allowing North Koreans to secretly cross .",
+      "I could have never imagined that it would take 14 years to live together .",
+      "But many die ."
+    ]
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    vi = translate_en2vi(en_sentence=en, length=MAX_LENGTH, model=model,
-                         tokenizer_en=tokenizer_en, tokenizer_vi=tokenizer_vi, device=device)
-    print("vi:", vi)
+    for en in ens:
+      vi = translate_en2vi(en_sentence=en, length=MAX_LENGTH, model=model,
+                          tokenizer_en=tokenizer_en, tokenizer_vi=tokenizer_vi, device=device)
+      print("vi:", vi)
 
 if __name__ == '__main__':
     main()
