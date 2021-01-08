@@ -2,6 +2,7 @@ import torch
 from torchnlp.encoders.text import DEFAULT_SOS_INDEX, DEFAULT_EOS_INDEX
 from model import NMT
 from dataset import IWSLT15EnViDataSet, convert_indices_to_tokens, convert_tokens_to_indices
+import argparse
 import sys
 sys.path.append("../")
 from CONFIG import EMBEDDING_SIZE, EN2VI, VI2EN, MAX_LENGTH
@@ -61,15 +62,12 @@ def _get_n_grams_precision(pred, label, n):
 
     pass
 
-def main():
-    dataset = IWSLT15EnViDataSet(en_path="../data/dev-2012-en-vi/tst2012.en",
-                                 vi_path="../data/dev-2012-en-vi/tst2012.vi")
-    tokenizer_en = dataset.tokenizer_en
-    tokenizer_vi = dataset.tokenizer_vi
-
+def main(checkpoint_path):
     model = NMT(mode=EN2VI, src_vocab_size=1765, tgt_vocab_size=1745)
-    checkpoint = torch.load("../model/model_en2vi.pt")
+    checkpoint = torch.load(checkpoint_path)
     model.load_state_dict(checkpoint["model"])
+    tokenizer_en = checkpoint["tokenizer_en"]
+    tokenizer_vi = checkpoint["tokenizer_vi"]
 
     ens = [
       "I go.",
@@ -88,4 +86,7 @@ def main():
       print("vi:", vi)
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--checkpoint_path", type=str)
+    args = parser.parse_args()
+    main(args.checkpoint_path)

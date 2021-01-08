@@ -19,7 +19,7 @@ print(f"Device: {device}")
 def train(mode, checkpoint_path):
     # Data
     data_train = IWSLT15EnViDataSet(en_path="../data/train-en-vi/train.en",
-                                    vi_path="../data/train-en-vi/train.en")
+                                    vi_path="../data/train-en-vi/train.vi")
     data_loader = DataLoader(data_train, batch_size=BATCH_SIZE,
                              shuffle=False, drop_last=False)
     if mode == EN2VI:
@@ -82,7 +82,8 @@ def train(mode, checkpoint_path):
             del src, tgt, en_valid_len, vi_valid_len, decoder_state, logit_outputs, loss
             torch.cuda.empty_cache()
 
-        save_checkpoint(model, optimizer, prev_epoch+epoch+1, checkpoint_path)
+        save_checkpoint(model, optimizer, data_train.tokenizer_en, data_train.tokenizer_vi,
+                        prev_epoch+epoch+1, checkpoint_path)
 
 def mask_padding(X, valid_len, device):
     positions = torch.arange(X.shape[1]).unsqueeze(dim=0).to(device)  # (1, seq_len)
@@ -91,20 +92,13 @@ def mask_padding(X, valid_len, device):
     masks = positions >= valid_len
     return masks
 
-def grad_clipping(model, theta):
-    assert isinstance(model, torch.nn.Module)
-    params = [p for p in model.parameters() if p.requires_grad]
-
-    norms = torch.sqrt(sum(torch.sum(p**2) for p in params))
-    if norms > theta:
-        for p in params:
-            p.grad.data.clamp_()
-
-def save_checkpoint(model, optimizer, epoch, checkpoint_path):
+def save_checkpoint(model, optimizer, tokenizer_en, tokenizer_vi, epoch, checkpoint_path):
     checkpoint = {
         "model": model.state_dict(),
         "optimizer": optimizer.state_dict(),
         "epoch": epoch,
+        "tokenizer_en": tokenizer_en,
+        "tokenizer_vi":tokenizer_vi
     }
     torch.save(checkpoint, checkpoint_path)
     print("Checkpoint saved!")
