@@ -36,8 +36,8 @@ def translate_en2vi(en_sentence, length, model, tokenizer_en, tokenizer_vi, devi
                 break
             pred_indices.append(pred_idx)
 
-    translated_sentence = " ".join(convert_indices_to_tokens(pred_indices, tokenizer_vi))
-    translated_sentence.replace('_', ' ') # Remove '_' of segmented words
+    translated_sentence = "".join(convert_indices_to_tokens(pred_indices, tokenizer_vi))
+    translated_sentence = translated_sentence.replace('_', ' ') # Remove '_' of segmented words
     return translated_sentence
 
 def translate_vi2en(vi_sentences, model):
