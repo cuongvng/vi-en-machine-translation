@@ -5,7 +5,7 @@ from dataset import IWSLT15EnViDataSet, convert_indices_to_tokens, convert_token
 import argparse
 import sys
 sys.path.append("../")
-from CONFIG import EMBEDDING_SIZE, EN2VI, VI2EN, MAX_LENGTH
+from CONFIG import MAX_LENGTH
 
 def translate_en2vi(en_sentence, length, model, tokenizer_en, tokenizer_vi, device):
     assert isinstance(model, NMT), "Incompatible model!"
@@ -63,8 +63,10 @@ def _get_n_grams_precision(pred, label, n):
     pass
 
 def main(checkpoint_path):
-    model = NMT(mode=EN2VI, src_vocab_size=1765, tgt_vocab_size=1745)
     checkpoint = torch.load(checkpoint_path)
+    model = NMT(mode=checkpoint["mode"],
+                src_vocab_size=checkpoint["src_vocab_size"],
+                tgt_vocab_size=checkpoint["tgt_vocab_size"])
     model.load_state_dict(checkpoint["model"])
     tokenizer_en = checkpoint["tokenizer_en"]
     tokenizer_vi = checkpoint["tokenizer_vi"]

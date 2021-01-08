@@ -82,8 +82,8 @@ def train(mode, checkpoint_path):
             del src, tgt, en_valid_len, vi_valid_len, decoder_state, logit_outputs, loss
             torch.cuda.empty_cache()
 
-        save_checkpoint(model, optimizer, data_train.tokenizer_en, data_train.tokenizer_vi,
-                        prev_epoch+epoch+1, checkpoint_path)
+        save_checkpoint(mode, src_vocab_size, tgt_vocab_size, model, optimizer, data_train.tokenizer_en,
+                        data_train.tokenizer_vi, prev_epoch+epoch+1, checkpoint_path)
 
 def mask_padding(X, valid_len, device):
     positions = torch.arange(X.shape[1]).unsqueeze(dim=0).to(device)  # (1, seq_len)
@@ -92,8 +92,12 @@ def mask_padding(X, valid_len, device):
     masks = positions >= valid_len
     return masks
 
-def save_checkpoint(model, optimizer, tokenizer_en, tokenizer_vi, epoch, checkpoint_path):
+def save_checkpoint(mode, src_vocab_size, tgt_vocab_size, model,
+                    optimizer, tokenizer_en, tokenizer_vi, epoch, checkpoint_path):
     checkpoint = {
+        "mode": mode,
+        "src_vocab_size": src_vocab_size,
+        "tgt_vocab_size": tgt_vocab_size,
         "model": model.state_dict(),
         "optimizer": optimizer.state_dict(),
         "epoch": epoch,
