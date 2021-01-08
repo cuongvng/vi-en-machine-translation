@@ -18,8 +18,8 @@ print(f"Device: {device}")
 
 def train(mode, checkpoint_path):
     # Data
-    data_train = IWSLT15EnViDataSet(en_path="../data/dev-2012-en-vi/tst2012.en",
-                                    vi_path="../data/dev-2012-en-vi/tst2012.vi")
+    data_train = IWSLT15EnViDataSet(en_path="../data/train-en-vi/train.en",
+                                    vi_path="../data/train-en-vi/train.en")
     data_loader = DataLoader(data_train, batch_size=BATCH_SIZE,
                              shuffle=False, drop_last=False)
     if mode == EN2VI:
