@@ -49,9 +49,8 @@ class Decoder(nn.Module):
         X = X + self.positional_encoder(X)
         X = X.permute(1, 0, 2) # (seq_len, batch_size, embedding_size)
         decoder_state = self.transfomer_decoder(tgt=X, memory=encoder_last_state,
-                                                tgt_key_padding_mask=tgt_key_padding_mask)
-        decoder_state = decoder_state.permute(1, 0, 2) # (batch_size, seq_len, embedding_size)
-        return decoder_state, self.fc(decoder_state)
+                                                tgt_key_padding_mask=tgt_key_padding_mask) # (seq_len, batch_size, embedding_size)
+        return decoder_state, self.fc(decoder_state.permute(1, 0, 2))
 
 class PositionalEncoder(nn.Module):
     def __init__(self, d_model, dropout=0.1, max_len=MAX_LENGTH):
