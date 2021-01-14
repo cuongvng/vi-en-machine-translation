@@ -9,12 +9,23 @@ from pathlib import Path
 from dataset import IWSLT15EnViDataSet
 from model import NMT
 from loss import MaskedPaddingCrossEntropyLoss
+from eval import translate_en2vi
 import sys
 sys.path.append("../")
-from CONFIG import N_EPOCHS, BATCH_SIZE, EN2VI, VI2EN
+from CONFIG import N_EPOCHS, BATCH_SIZE, EN2VI, VI2EN, MAX_LENGTH
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Device: {device}")
+
+ens = [
+    "I go.",
+    "My grandmother never let me forget his life . ",
+    "I was so shocked .",
+    "As you can see , the river can be very narrow at certain points , allowing North Koreans to secretly cross .",
+    "I could have never imagined that it would take 14 years to live together .",
+    "But many die ."
+]
+
 
 def train(mode, checkpoint_path):
     # Data
@@ -84,6 +95,13 @@ def train(mode, checkpoint_path):
 
         save_checkpoint(mode, src_vocab_size, tgt_vocab_size, model, optimizer, data_train.tokenizer_en,
                         data_train.tokenizer_vi, prev_epoch+epoch+1, checkpoint_path)
+
+        for en in ens:
+            vi = translate_en2vi(en_sentence=en, length=MAX_LENGTH, model=model,
+                                 tokenizer_en=data_train.tokenizer_en,
+                                 tokenizer_vi=data_train.tokenizer_vi, device=device)
+            print("en:", en, "=> vi:", vi)
+
 
 def mask_padding(X, valid_len, device):
     positions = torch.arange(X.shape[1]).unsqueeze(dim=0).to(device)  # (1, seq_len)

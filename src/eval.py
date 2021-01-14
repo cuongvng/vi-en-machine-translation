@@ -85,7 +85,7 @@ def main(checkpoint_path):
     for en in ens:
       vi = translate_en2vi(en_sentence=en, length=MAX_LENGTH, model=model,
                           tokenizer_en=tokenizer_en, tokenizer_vi=tokenizer_vi, device=device)
-      print("vi:", vi)
+      print("en:", en, "=> vi:", vi)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
