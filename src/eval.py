@@ -30,7 +30,7 @@ def translate_en2vi(en_sentence, length, model, tokenizer_en, tokenizer_vi, devi
             # Decoder forward pass
             decoder_memory, logit_outputs = model.decoder(dec_X, decoder_memory)
             # Use the token with highest probability as the input of the next time step
-            dec_X = logit_outputs[:, i, :].argmax(dim=1)
+            dec_X = logit_outputs.argmax(dim=2)
             pred_idx = dec_X.squeeze(dim=0).to(torch.int32).item()
 
             if pred_idx == DEFAULT_EOS_INDEX:

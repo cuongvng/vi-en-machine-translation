@@ -64,6 +64,6 @@ class PositionalEncoder(nn.Module):
         pe[:, :, 1::2] = torch.cos(position * div_term)
         self.register_buffer('pe', pe)
 
-    def forward(self, x):
-        x = x + self.pe
-        return self.dropout(x)
+    def forward(self, X):
+        X = X + self.pe[:, :X.shape[1], :]
+        return self.dropout(X)
