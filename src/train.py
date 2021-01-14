@@ -76,7 +76,7 @@ def train(mode, checkpoint_path):
             optimizer.step()
 
             if b%50 == 0:
-                print(f"\tBatch {b}; Loss: {loss:.2f}")
+                print(f"\tBatch {b}; Loss: {loss:.2f}; Mean Token Loss: {loss/tgt_valid_len.sum():.4f}")
 
             ## Free up GPU memory
             del src, tgt, en_valid_len, vi_valid_len, decoder_state, logit_outputs, loss
