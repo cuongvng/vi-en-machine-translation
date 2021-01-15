@@ -9,8 +9,13 @@ from CONFIG import MAX_LENGTH
 
 class IWSLT15EnViDataSet(Dataset):
     def __init__(self, en_path, vi_path):
-        self.data_en = load_data(en_path)
+        data_en = load_data(en_path)
         data_vi = load_data(vi_path)
+
+        # Preprocess string
+        self.data_en = data_en.apply(lambda s: preprocess_str(s))
+        data_vi = data_vi.apply(lambda s: preprocess_str(s))
+
         # Segment Vietnamese words
         self.data_vi = data_vi.apply(lambda s: ViTokenizer.tokenize(s))
 
@@ -82,3 +87,14 @@ def load_data(data_path):
         list_sentences = fr.readlines()
     sentence_series = pd.Series(list_sentences)
     return sentence_series
+
+def preprocess_str(s):
+    # Lower case
+    s = s.lower()
+
+    # Replace special chars
+    special_chars = {'&quot;': '\"', '&apos;': "\'", '&amp; amp ;':'&',
+                     '&#93;': ']', '&#91;': '['}
+    for k, v in special_chars.items():
+        s = s.replace(k, v)
+    return s
