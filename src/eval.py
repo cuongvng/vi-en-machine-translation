@@ -1,7 +1,7 @@
 import torch
 from torchnlp.encoders.text import DEFAULT_SOS_INDEX, DEFAULT_EOS_INDEX
 from model import NMT
-from dataset import IWSLT15EnViDataSet, convert_indices_to_tokens, convert_tokens_to_indices
+from dataset import IWSLT15EnViDataSet, convert_indices_to_tokens, convert_tokens_to_indices, preprocess_str
 import argparse
 import sys
 sys.path.append("../")
@@ -10,6 +10,7 @@ from CONFIG import MAX_LENGTH
 def translate_en2vi(en_sentence, length, model, tokenizer_en, tokenizer_vi, device):
     assert isinstance(model, NMT), "Incompatible model!"
 
+    en_sentence = preprocess_str(en_sentence)
     en_tokens, valid_len = convert_tokens_to_indices(en_sentence, tokenizer_en)
     en_tokens = en_tokens.reshape(-1, 1).to(device)
     # en_padding_mask = mask_padding(en_tokens, valid_len, device)
@@ -83,9 +84,9 @@ def main(checkpoint_path):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     for en in ens:
-      vi = translate_en2vi(en_sentence=en, length=MAX_LENGTH, model=model,
-                          tokenizer_en=tokenizer_en, tokenizer_vi=tokenizer_vi, device=device)
-      print("en:", en, "=> vi:", vi)
+        vi = translate_en2vi(en_sentence=en, length=MAX_LENGTH, model=model,
+                            tokenizer_en=tokenizer_en, tokenizer_vi=tokenizer_vi, device=device)
+        print("en:", en, "=> vi:", vi)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
