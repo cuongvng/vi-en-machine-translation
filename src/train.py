@@ -76,21 +76,30 @@ def train(mode, checkpoint_path):
 
             optimizer.zero_grad()
 
-            # Teacher forcing
-            sos = torch.tensor([[DEFAULT_SOS_INDEX]*tgt.shape[0]], device=device).reshape(-1, 1)
-            decoder_X = torch.cat((sos, tgt[:, :-1]), dim=1)
+            # Encoder's forward pass:
+            encoder_state = model.encoder(src, src_masks)
+            # Decoder's forward pass
+            decoder_X = torch.tensor([[DEFAULT_SOS_INDEX]*tgt.shape[0]], device=device).reshape(-1, 1)
+            decoder_state = encoder_state
 
-            decoder_state, logit_outputs = model(src, decoder_X, src_masks, tgt_masks)
-            loss = criterion(pred=logit_outputs, label=tgt, valid_len=tgt_valid_len, device=device).sum()
+            loss = torch.tensor(0, device=device, dtype=torch.float)
+            for i in range(1, tgt.shape[1]):
+                decoder_state, logit_pred = model.decoder(decoder_X, decoder_state)
+                loss += criterion(pred=logit_pred[:, 0, :], label=tgt[:, i], device=device).sum()
+                # Teacher forcing
+                decoder_X = tgt[:, i].reshape(-1, 1)
+
             loss.backward()
             clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
 
             if b%50 == 0:
-                print(f"\tBatch {b}; Loss: {loss:.2f}; Mean Token Loss: {loss/tgt_valid_len.sum():.4f}")
+                seq_loss = loss/(MAX_LENGTH-1)
+                print(f"\tBatch {b}; Loss: {seq_loss:.2f}; "
+                      f"Mean Token Loss: {seq_loss/tgt_valid_len.sum():.4f}")
 
             ## Free up GPU memory
-            del src, tgt, en_valid_len, vi_valid_len, decoder_state, logit_outputs, loss
+            del src, tgt, en_valid_len, vi_valid_len, decoder_state, logit_pred, loss
             torch.cuda.empty_cache()
 
         save_checkpoint(mode, src_vocab_size, tgt_vocab_size, model, optimizer, data_train.tokenizer_en,
